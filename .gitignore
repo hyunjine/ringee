@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# Tuist (프로젝트 파일은 매번 생성하므로 커밋하지 않는다)
+*.xcodeproj
+*.xcworkspace
+Derived/
+.build/
+Tuist/.build/
