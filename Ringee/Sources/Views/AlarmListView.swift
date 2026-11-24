@@ -60,6 +60,7 @@ struct AlarmListView: View {
         } actions: {
             Button("알람 추가") { isPresentingEditor = true }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
         }
     }
 
@@ -75,6 +76,7 @@ struct AlarmListView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
         }
     }
 }
