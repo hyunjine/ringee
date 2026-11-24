@@ -1,11 +1,12 @@
 import AlarmKit
 import SwiftUI
 
-/// 등록된 알람 목록. 오른쪽 위 + 로 새 알람을 추가한다.
+/// 등록된 알람 목록. 오른쪽 위 + 로 새 알람을 추가하고, 행을 누르면 편집한다.
 struct AlarmListView: View {
     @Environment(AlarmStore.self) private var store
     @Environment(\.openURL) private var openURL
     @State private var isPresentingEditor = false
+    @State private var editingItem: AlarmItem?
 
     var body: some View {
         NavigationStack {
@@ -29,13 +30,21 @@ struct AlarmListView: View {
             .sheet(isPresented: $isPresentingEditor) {
                 AlarmEditView()
             }
+            .sheet(item: $editingItem) { item in
+                AlarmEditView(editing: item)
+            }
         }
     }
 
     private var list: some View {
         List {
             ForEach(store.items) { item in
-                AlarmRow(item: item)
+                Button {
+                    editingItem = item
+                } label: {
+                    AlarmRow(item: item)
+                }
+                .tint(.primary)
             }
             .onDelete { offsets in
                 offsets.map { store.items[$0] }.forEach(store.delete)

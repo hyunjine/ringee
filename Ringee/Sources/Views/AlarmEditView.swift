@@ -1,15 +1,25 @@
 import SwiftUI
 
-/// 새 알람의 날짜 · 시간 · 레이블 · 사운드를 정하고 저장한다.
+/// 알람의 날짜 · 시간 · 레이블 · 사운드를 정하고 저장한다.
+/// `editing` 이 있으면 그 알람을 편집하고, 없으면 새 알람을 추가한다.
 struct AlarmEditView: View {
     @Environment(AlarmStore.self) private var store
     @Environment(\.dismiss) private var dismiss
 
-    @State private var date = Date.now.addingTimeInterval(60).droppingSeconds
-    @State private var label = ""
-    @State private var sound: AlarmSound = .systemDefault
+    private let editing: AlarmItem?
+
+    @State private var date: Date
+    @State private var label: String
+    @State private var sound: AlarmSound
     @State private var isSaving = false
     @State private var errorMessage: String?
+
+    init(editing: AlarmItem? = nil) {
+        self.editing = editing
+        _date = State(initialValue: editing?.date ?? Date.now.addingTimeInterval(60).droppingSeconds)
+        _label = State(initialValue: editing?.label ?? "")
+        _sound = State(initialValue: editing?.sound ?? .systemDefault)
+    }
 
     private var isPast: Bool { date.droppingSeconds <= .now }
 
@@ -51,8 +61,19 @@ struct AlarmEditView: View {
                         LabeledContent("사운드", value: sound.title)
                     }
                 }
+
+                if let editing {
+                    Section {
+                        Button("알람 삭제", role: .destructive) {
+                            store.delete(editing)
+                            dismiss()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .disabled(isSaving)
+                    }
+                }
             }
-            .navigationTitle("알람 추가")
+            .navigationTitle(editing == nil ? "알람 추가" : "알람 편집")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -84,7 +105,11 @@ struct AlarmEditView: View {
         isSaving = true
         defer { isSaving = false }
         do {
-            try await store.schedule(date: date, label: label, sound: sound)
+            if let editing {
+                try await store.update(editing, date: date, label: label, sound: sound)
+            } else {
+                try await store.schedule(date: date, label: label, sound: sound)
+            }
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
