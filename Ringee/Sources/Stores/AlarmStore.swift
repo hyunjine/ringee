@@ -56,6 +56,28 @@ final class AlarmStore {
     // MARK: - Actions
 
     func schedule(date: Date, label: String, sound: AlarmSound) async throws {
+        try await scheduleNew(date: date, label: label, sound: sound)
+    }
+
+    /// 기존 알람을 새 날짜 · 레이블 · 사운드로 바꾼다.
+    /// 새 알람을 먼저 등록한 뒤 기존 알람을 취소하므로, 등록에 실패하면 기존 알람이 그대로 남는다.
+    func update(_ item: AlarmItem, date: Date, label: String, sound: AlarmSound) async throws {
+        try await scheduleNew(date: date, label: label, sound: sound)
+        delete(item)
+    }
+
+    func delete(_ item: AlarmItem) {
+        try? manager.cancel(id: item.id)
+        savedItems[item.id] = nil
+        items.removeAll { $0.id == item.id }
+        persist()
+    }
+
+    // MARK: - Private
+
+    /// 새 ID 로 AlarmKit 에 알람을 등록하고 로컬 목록에 저장한다.
+    @discardableResult
+    private func scheduleNew(date: Date, label: String, sound: AlarmSound) async throws -> AlarmItem {
         let fireDate = date.droppingSeconds
         guard fireDate > .now else { throw StoreError.pastDate }
         try await ensureAuthorized()
@@ -79,21 +101,13 @@ final class AlarmStore {
         do {
             _ = try await AlarmManager.shared.schedule(id: id, configuration: configuration)
             upsertVisible(item)
+            return item
         } catch {
             savedItems[id] = nil
             persist()
             throw error
         }
     }
-
-    func delete(_ item: AlarmItem) {
-        try? manager.cancel(id: item.id)
-        savedItems[item.id] = nil
-        items.removeAll { $0.id == item.id }
-        persist()
-    }
-
-    // MARK: - Private
 
     private func ensureAuthorized() async throws {
         switch manager.authorizationState {
