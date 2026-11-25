@@ -63,7 +63,27 @@ final class AlarmStore {
 
     /// 기존 알람을 `updated` 의 설정으로 바꾼다.
     /// 새 ID 로 먼저 등록한 뒤 기존 알람을 취소하므로, 등록에 실패하면 기존 알람이 그대로 남는다.
+    /// 꺼진 알람은 AlarmKit 에 등록하지 않고 같은 ID 로 값만 바꿔 저장한다 (꺼진 상태 유지).
     func update(_ item: AlarmItem, with updated: AlarmItem) async throws {
+        guard item.isEnabled else {
+            var disabled = AlarmItem(
+                id: item.id,
+                hour: updated.hour,
+                minute: updated.minute,
+                weekdays: updated.weekdays,
+                excludesHolidays: updated.excludesHolidays,
+                snoozeEnabled: updated.snoozeEnabled,
+                snoozeMinutes: updated.snoozeMinutes,
+                label: updated.label,
+                sound: updated.sound,
+                isEnabled: false
+            )
+            if disabled.label.isEmpty { disabled.label = "알람" }
+            savedItems[item.id] = disabled
+            refreshItems()
+            persist()
+            return
+        }
         var replacement = updated
         if replacement.id == item.id {
             replacement = AlarmItem(
@@ -81,6 +101,20 @@ final class AlarmStore {
         delete(item)
     }
 
+    /// 알람을 켜거나 끈다. 끄면 AlarmKit 알람만 취소하고 목록에는 남기며, 켜면 같은 ID 로 다시 등록한다.
+    func setEnabled(_ item: AlarmItem, _ enabled: Bool) async throws {
+        guard var stored = savedItems[item.id], stored.isEnabled != enabled else { return }
+        stored.isEnabled = enabled
+        if enabled {
+            try await register(stored)
+        } else {
+            try? manager.cancel(id: stored.id)
+            savedItems[stored.id] = stored
+            refreshItems()
+            persist()
+        }
+    }
+
     /// 사용자가 명시적으로 삭제할 때만 알람을 목록 · AlarmKit 에서 지운다.
     func delete(_ item: AlarmItem) {
         try? manager.cancel(id: item.id)
@@ -92,28 +126,31 @@ final class AlarmStore {
     // MARK: - Private
 
     /// 저장돼 있지만 AlarmKit 에 없는 알람(예: 예전 버전의 한 번만 울리는 알람이 울리고 사라진 경우)을 다시 등록한다.
+    /// 사용자가 꺼 둔 알람은 등록하지 않는다.
     private func restoreMissingAlarms() async {
         guard manager.authorizationState == .authorized else { return }
         let liveIDs = Set(((try? manager.alarms) ?? []).map(\.id))
-        for item in savedItems.values where !liveIDs.contains(item.id) {
+        for item in savedItems.values where item.isEnabled && !liveIDs.contains(item.id) {
             _ = try? await AlarmManager.shared.schedule(id: item.id, configuration: Self.configuration(for: item))
         }
     }
 
     /// AlarmKit 에 매주 반복 알람으로 등록하고 로컬 목록에 저장한다.
+    /// 등록에 실패하면 저장소를 등록 전 상태로 되돌린다 (꺼 둔 알람을 켜다 실패하면 꺼진 상태로 남는다).
     private func register(_ item: AlarmItem) async throws {
         try await ensureAuthorized()
 
         var item = item
         if item.label.isEmpty { item.label = "알람" }
 
+        let previous = savedItems[item.id]
         savedItems[item.id] = item
         persist()
         do {
             _ = try await AlarmManager.shared.schedule(id: item.id, configuration: Self.configuration(for: item))
             refreshItems()
         } catch {
-            savedItems[item.id] = nil
+            savedItems[item.id] = previous
             persist()
             throw error
         }

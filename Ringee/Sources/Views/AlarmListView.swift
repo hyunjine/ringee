@@ -7,6 +7,7 @@ struct AlarmListView: View {
     @Environment(\.openURL) private var openURL
     @State private var isPresentingEditor = false
     @State private var editingItem: AlarmItem?
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -34,23 +35,47 @@ struct AlarmListView: View {
             .sheet(item: $editingItem) { item in
                 AlarmEditView(editing: item)
             }
+            .alert(
+                "알람을 켜지 못했습니다",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text(errorMessage ?? "")
+            }
         }
     }
 
     private var list: some View {
         List {
             ForEach(store.items) { item in
-                Button {
+                AlarmRow(item: item, isEnabled: enabledBinding(for: item)) {
                     editingItem = item
-                } label: {
-                    AlarmRow(item: item)
                 }
-                .tint(.primary)
             }
             .onDelete { offsets in
                 offsets.map { store.items[$0] }.forEach(store.delete)
             }
         }
+    }
+
+    /// 토글을 바꾸면 AlarmKit 등록 · 취소를 함께 처리한다.
+    private func enabledBinding(for item: AlarmItem) -> Binding<Bool> {
+        Binding(
+            get: { item.isEnabled },
+            set: { enabled in
+                Task {
+                    do {
+                        try await store.setEnabled(item, enabled)
+                    } catch {
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            }
+        )
     }
 
     private var emptyView: some View {
@@ -82,19 +107,33 @@ struct AlarmListView: View {
     }
 }
 
+/// 알람 한 줄. 텍스트 영역을 누르면 편집하고, 오른쪽 토글로 켜고 끈다. 꺼진 알람은 텍스트를 흐리게 보여 준다.
 private struct AlarmRow: View {
     let item: AlarmItem
+    @Binding var isEnabled: Bool
+    let onTap: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(item.timeOfDay, format: .dateTime.hour().minute())
-                .font(.system(size: 48, weight: .light))
-                .monospacedDigit()
-            Text("\(item.label), \(item.repeatSummary)")
-                .font(.subheadline)
-            Label(item.sound.title, systemImage: "music.note")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        HStack {
+            Button(action: onTap) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.timeOfDay, format: .dateTime.hour().minute())
+                        .font(.system(size: 48, weight: .light))
+                        .monospacedDigit()
+                    Text("\(item.label), \(item.repeatSummary)")
+                        .font(.subheadline)
+                    Label(item.sound.title, systemImage: "music.note")
+                        .font(.footnote)
+                        .foregroundStyle(isEnabled ? .secondary : .tertiary)
+                }
+                .foregroundStyle(isEnabled ? .primary : .secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+
+            Toggle("알람 켜기", isOn: $isEnabled)
+                .labelsHidden()
         }
         .padding(.vertical, 4)
     }

@@ -7,6 +7,21 @@ struct RingeeTests {
         let data = try JSONEncoder().encode(RingeeAlarmMetadata())
         _ = try JSONDecoder().decode(RingeeAlarmMetadata.self, from: data)
     }
+
+    @Test func alarmItemWithoutIsEnabledDecodesAsEnabled() throws {
+        let json = """
+        {"id":"\(UUID().uuidString)","date":0,"label":"기상","sound":"bell"}
+        """
+        let item = try JSONDecoder().decode(AlarmItem.self, from: Data(json.utf8))
+        #expect(item.isEnabled)
+    }
+
+    @Test func alarmItemIsEnabledRoundTrips() throws {
+        let item = AlarmItem(hour: 7, minute: 0, label: "기상", sound: .bell, isEnabled: false)
+        let decoded = try JSONDecoder().decode(AlarmItem.self, from: JSONEncoder().encode(item))
+        #expect(decoded.isEnabled == false)
+        #expect(decoded.label == item.label)
+    }
 }
 
 struct AlarmWeekdayTests {

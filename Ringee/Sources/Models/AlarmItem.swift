@@ -15,6 +15,8 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
     var snoozeMinutes: Int
     var label: String
     var sound: AlarmSound
+    /// 꺼 두면 AlarmKit 에는 등록하지 않고 목록에만 남긴다.
+    var isEnabled: Bool
 
     static let defaultSnoozeMinutes = 9
 
@@ -27,7 +29,8 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
         snoozeEnabled: Bool = true,
         snoozeMinutes: Int = AlarmItem.defaultSnoozeMinutes,
         label: String,
-        sound: AlarmSound
+        sound: AlarmSound,
+        isEnabled: Bool = true
     ) {
         self.id = id
         self.hour = hour
@@ -38,6 +41,7 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
         self.snoozeMinutes = snoozeMinutes
         self.label = label
         self.sound = sound
+        self.isEnabled = isEnabled
     }
 
     /// 반복 요일 요약 ("매일", "주중", "월 수 금" 등)
@@ -54,7 +58,7 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
     // MARK: - Codable
 
     private enum CodingKeys: String, CodingKey {
-        case id, hour, minute, weekdays, excludesHolidays, snoozeEnabled, snoozeMinutes, label, sound
+        case id, hour, minute, weekdays, excludesHolidays, snoozeEnabled, snoozeMinutes, label, sound, isEnabled
     }
 
     /// 1.0.0 MVP 가 저장한 날짜 기반 알람의 키
@@ -71,6 +75,8 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
         excludesHolidays = try container.decodeIfPresent(Bool.self, forKey: .excludesHolidays) ?? false
         snoozeEnabled = try container.decodeIfPresent(Bool.self, forKey: .snoozeEnabled) ?? true
         snoozeMinutes = try container.decodeIfPresent(Int.self, forKey: .snoozeMinutes) ?? Self.defaultSnoozeMinutes
+        // isEnabled 가 없던 예전 데이터는 켜진 알람으로 읽는다.
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
 
         if let hour = try container.decodeIfPresent(Int.self, forKey: .hour),
            let minute = try container.decodeIfPresent(Int.self, forKey: .minute) {
@@ -97,5 +103,6 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
         try container.encode(snoozeMinutes, forKey: .snoozeMinutes)
         try container.encode(label, forKey: .label)
         try container.encode(sound, forKey: .sound)
+        try container.encode(isEnabled, forKey: .isEnabled)
     }
 }
