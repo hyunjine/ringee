@@ -21,7 +21,8 @@ struct AlarmListView: View {
             }
             .navigationTitle("알람")
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                ToolbarItem(placement: .bottomBar) {
                     Button("알람 추가", systemImage: "plus") {
                         isPresentingEditor = true
                     }
