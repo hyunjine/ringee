@@ -87,10 +87,10 @@ private struct AlarmRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(item.date, format: .dateTime.hour().minute())
+            Text(item.timeOfDay, format: .dateTime.hour().minute())
                 .font(.system(size: 48, weight: .light))
                 .monospacedDigit()
-            Text("\(item.label), \(item.date.formatted(.dateTime.month().day().weekday()))")
+            Text("\(item.label), \(item.repeatSummary)")
                 .font(.subheadline)
             Label(item.sound.title, systemImage: "music.note")
                 .font(.footnote)
