@@ -1,7 +1,7 @@
 import AlarmKit
 import SwiftUI
 
-/// 등록된 알람 목록. 오른쪽 위 + 로 새 알람을 추가하고, 행을 누르면 편집한다.
+/// 등록된 알람 목록. 오른쪽 아래 플로팅 + 로 새 알람을 추가하고, 행을 누르면 편집한다.
 struct AlarmListView: View {
     @Environment(AlarmStore.self) private var store
     @Environment(\.openURL) private var openURL
@@ -21,13 +21,8 @@ struct AlarmListView: View {
                 }
             }
             .navigationTitle("알람")
-            .toolbar {
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Button("알람 추가", systemImage: "plus") {
-                        isPresentingEditor = true
-                    }
-                }
+            .overlay(alignment: .bottomTrailing) {
+                addButton
             }
             .sheet(isPresented: $isPresentingEditor) {
                 AlarmEditView()
@@ -60,6 +55,29 @@ struct AlarmListView: View {
                 offsets.map { store.items[$0] }.forEach(store.delete)
             }
         }
+        // 마지막 행이 플로팅 버튼에 가리지 않도록 하단 여백을 둔다.
+        .contentMargins(.bottom, Self.addButtonSize + Self.addButtonInset * 2, for: .scrollContent)
+    }
+
+    private static let addButtonSize: CGFloat = 48
+    private static let addButtonInset: CGFloat = 24
+
+    /// 우하단에 떠 있는 Liquid Glass 알람 추가 버튼.
+    private var addButton: some View {
+        Button {
+            isPresentingEditor = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: Self.addButtonSize, height: Self.addButtonSize)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
+        .accessibilityLabel("알람 추가")
+        .padding(.trailing, Self.addButtonInset)
+        .padding(.bottom, Self.addButtonInset)
     }
 
     /// 토글을 바꾸면 AlarmKit 등록 · 취소를 함께 처리한다.
