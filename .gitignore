@@ -12,3 +12,6 @@ DerivedData/
 Derived/
 .build/
 Tuist/.build/
+
+# 로컬 전용 비밀 값 (Configs/Secrets.example.xcconfig 참고)
+Configs/Secrets.xcconfig
