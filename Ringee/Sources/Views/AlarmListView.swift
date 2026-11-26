@@ -107,6 +107,7 @@ struct AlarmListView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)
         }
+        .placedBelowHeader()
     }
 
     private var deniedView: some View {
@@ -123,7 +124,27 @@ struct AlarmListView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
         }
+        .placedBelowHeader()
     }
+}
+
+private extension View {
+    /// 헤더(큰 제목) 아래 일정 간격에 위쪽 정렬로 놓는다.
+    func placedBelowHeader() -> some View {
+        VStack(spacing: 0) {
+            fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.top, EmptyStateLayout.topSpacing - EmptyStateLayout.builtInTopInset)
+    }
+}
+
+/// 알람 없음 · 권한 꺼짐 화면 배치 값.
+private enum EmptyStateLayout {
+    /// 헤더 아래 끝에서 아이콘 위 끝까지의 간격.
+    static let topSpacing: CGFloat = 146
+    /// `ContentUnavailableView` 가 아이콘 위에 자체로 두는 여백 (iOS 26 실측 약 19pt).
+    static let builtInTopInset: CGFloat = 19
 }
 
 /// 알람 한 줄. 텍스트 영역을 누르면 편집하고, 오른쪽 토글로 켜고 끈다. 꺼진 알람은 텍스트를 흐리게 보여 준다.
