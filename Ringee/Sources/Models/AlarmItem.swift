@@ -6,9 +6,9 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
     let id: UUID
     var hour: Int
     var minute: Int
-    /// 반복 요일. 비어 있으면 매일 반복한다.
+    /// 반복 요일. 항상 하나 이상이며, 기본값은 매일이다.
     var weekdays: Set<AlarmWeekday>
-    /// 공휴일에는 울리지 않음. 반복 요일이 있을 때만 의미가 있다.
+    /// 공휴일에는 울리지 않음.
     var excludesHolidays: Bool
     var snoozeEnabled: Bool
     /// 다시 알림까지 기다리는 시간 (분)
@@ -24,7 +24,7 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
         id: UUID = UUID(),
         hour: Int,
         minute: Int,
-        weekdays: Set<AlarmWeekday> = [],
+        weekdays: Set<AlarmWeekday> = AlarmWeekday.everyDay,
         excludesHolidays: Bool = false,
         snoozeEnabled: Bool = true,
         snoozeMinutes: Int = AlarmItem.defaultSnoozeMinutes,
@@ -35,7 +35,7 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
         self.id = id
         self.hour = hour
         self.minute = minute
-        self.weekdays = weekdays
+        self.weekdays = AlarmWeekday.normalized(weekdays)
         self.excludesHolidays = excludesHolidays
         self.snoozeEnabled = snoozeEnabled
         self.snoozeMinutes = snoozeMinutes
@@ -71,7 +71,10 @@ nonisolated struct AlarmItem: Codable, Identifiable, Hashable, Sendable {
         id = try container.decode(UUID.self, forKey: .id)
         label = try container.decode(String.self, forKey: .label)
         sound = try container.decodeIfPresent(AlarmSound.self, forKey: .sound) ?? .systemDefault
-        weekdays = try container.decodeIfPresent(Set<AlarmWeekday>.self, forKey: .weekdays) ?? []
+        // 요일이 없거나 비어 있던 예전 데이터는 매일 반복으로 읽는다.
+        weekdays = AlarmWeekday.normalized(
+            try container.decodeIfPresent(Set<AlarmWeekday>.self, forKey: .weekdays) ?? []
+        )
         excludesHolidays = try container.decodeIfPresent(Bool.self, forKey: .excludesHolidays) ?? false
         snoozeEnabled = try container.decodeIfPresent(Bool.self, forKey: .snoozeEnabled) ?? true
         snoozeMinutes = try container.decodeIfPresent(Int.self, forKey: .snoozeMinutes) ?? Self.defaultSnoozeMinutes

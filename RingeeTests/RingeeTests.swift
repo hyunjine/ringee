@@ -48,6 +48,23 @@ struct AlarmWeekdayTests {
         #expect(AlarmWeekday.effectiveDays(for: [.friday, .monday]) == [.monday, .friday])
     }
 
+    @Test func emptySelectionNormalizesToEveryDay() {
+        #expect(AlarmWeekday.normalized([]) == AlarmWeekday.everyDay)
+        #expect(AlarmWeekday.normalized([.monday]) == [.monday])
+    }
+
+    @Test func togglingKeepsLastSelectedDay() {
+        #expect(AlarmWeekday.toggling(.monday, in: [.monday]) == [.monday])
+        #expect(AlarmWeekday.toggling(.monday, in: [.monday, .friday]) == [.friday])
+        #expect(AlarmWeekday.toggling(.sunday, in: [.monday]) == [.monday, .sunday])
+    }
+
+    @Test func newItemDefaultsToEveryDay() {
+        let item = AlarmItem(hour: 7, minute: 0, label: "", sound: .systemDefault)
+        #expect(item.weekdays == AlarmWeekday.everyDay)
+        #expect(item.repeatSummary == "매일")
+    }
+
     @Test func mapsToLocaleWeekdays() {
         #expect(AlarmWeekday.allCases.map(\.localeWeekday)
             == [.sunday, .monday, .tuesday, .wednesday, .thursday, .friday, .saturday])
@@ -86,7 +103,7 @@ struct AlarmItemCodingTests {
         #expect(item.id == id)
         #expect(item.hour == 6)
         #expect(item.minute == 45)
-        #expect(item.weekdays.isEmpty)
+        #expect(item.weekdays == AlarmWeekday.everyDay)
         #expect(item.repeatSummary == "매일")
         #expect(item.snoozeEnabled)
         #expect(item.snoozeMinutes == AlarmItem.defaultSnoozeMinutes)

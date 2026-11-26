@@ -40,6 +40,8 @@ nonisolated enum AlarmWeekday: Int, CaseIterable, Codable, Comparable, Identifia
 
     static let weekdays: Set<AlarmWeekday> = [.monday, .tuesday, .wednesday, .thursday, .friday]
     static let weekend: Set<AlarmWeekday> = [.saturday, .sunday]
+    /// 매일. 새 알람의 기본 반복 요일이다.
+    static let everyDay: Set<AlarmWeekday> = Set(allCases)
 
     static func < (lhs: AlarmWeekday, rhs: AlarmWeekday) -> Bool {
         lhs.rawValue < rhs.rawValue
@@ -51,6 +53,23 @@ nonisolated enum AlarmWeekday: Int, CaseIterable, Codable, Comparable, Identifia
         if days == weekdays { return "주중" }
         if days == weekend { return "주말" }
         return days.sorted().map(\.shortName).joined(separator: " ")
+    }
+
+    /// 저장된 반복 요일을 정규화한다. 비어 있으면(예전 데이터) 매일로 본다.
+    static func normalized(_ days: Set<AlarmWeekday>) -> Set<AlarmWeekday> {
+        days.isEmpty ? everyDay : days
+    }
+
+    /// 요일 칩을 눌렀을 때의 선택 결과. 마지막 남은 요일은 해제할 수 없다.
+    static func toggling(_ day: AlarmWeekday, in days: Set<AlarmWeekday>) -> Set<AlarmWeekday> {
+        var result = days
+        if result.contains(day) {
+            guard result.count > 1 else { return days }
+            result.remove(day)
+        } else {
+            result.insert(day)
+        }
+        return result
     }
 
     /// 실제로 울릴 요일. 선택이 없으면 매일 울린다.
