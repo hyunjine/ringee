@@ -22,7 +22,7 @@ struct AlarmEditView: View {
     init(editing: AlarmItem? = nil) {
         self.editing = editing
         _time = State(initialValue: editing?.timeOfDay ?? .now)
-        _weekdays = State(initialValue: editing?.weekdays ?? [])
+        _weekdays = State(initialValue: editing?.weekdays ?? AlarmWeekday.everyDay)
         _excludesHolidays = State(initialValue: editing?.excludesHolidays ?? false)
         _label = State(initialValue: editing?.label ?? "")
         _sound = State(initialValue: editing?.sound ?? .systemDefault)
@@ -44,9 +44,7 @@ struct AlarmEditView: View {
                 Section {
                     LabeledContent("반복", value: AlarmWeekday.summary(for: weekdays))
                     WeekdayChips(selection: $weekdays)
-                    if !weekdays.isEmpty {
-                        Toggle("공휴일 제외", isOn: $excludesHolidays)
-                    }
+                    Toggle("공휴일 제외", isOn: $excludesHolidays)
                 }
 
                 Section {
@@ -114,7 +112,7 @@ struct AlarmEditView: View {
             hour: components.hour ?? 0,
             minute: components.minute ?? 0,
             weekdays: weekdays,
-            excludesHolidays: !weekdays.isEmpty && excludesHolidays,
+            excludesHolidays: excludesHolidays,
             snoozeEnabled: snoozeEnabled,
             snoozeMinutes: snoozeMinutes,
             label: label.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -138,7 +136,7 @@ struct AlarmEditView: View {
     }
 }
 
-/// 일 ~ 토 원형 요일 칩. 여러 요일을 선택할 수 있다.
+/// 일 ~ 토 원형 요일 칩. 여러 요일을 선택할 수 있고, 마지막 남은 요일은 해제되지 않는다.
 private struct WeekdayChips: View {
     @Binding var selection: Set<AlarmWeekday>
 
@@ -147,11 +145,7 @@ private struct WeekdayChips: View {
             ForEach(AlarmWeekday.allCases) { day in
                 let isSelected = selection.contains(day)
                 Button {
-                    if isSelected {
-                        selection.remove(day)
-                    } else {
-                        selection.insert(day)
-                    }
+                    selection = AlarmWeekday.toggling(day, in: selection)
                 } label: {
                     Text(day.shortName)
                         .font(.headline)
