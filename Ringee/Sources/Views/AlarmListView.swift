@@ -1,7 +1,7 @@
 import AlarmKit
 import SwiftUI
 
-/// 등록된 알람 목록. 오른쪽 위 + 로 새 알람을 추가하고, 행을 누르면 편집한다.
+/// 등록된 알람 목록. 오른쪽 아래 플로팅 + 로 새 알람을 추가하고, 행을 누르면 편집한다.
 struct AlarmListView: View {
     @Environment(AlarmStore.self) private var store
     @Environment(\.openURL) private var openURL
@@ -21,13 +21,8 @@ struct AlarmListView: View {
                 }
             }
             .navigationTitle("알람")
-            .toolbar {
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                ToolbarItem(placement: .bottomBar) {
-                    Button("알람 추가", systemImage: "plus") {
-                        isPresentingEditor = true
-                    }
-                }
+            .overlay(alignment: .bottomTrailing) {
+                addButton
             }
             .sheet(isPresented: $isPresentingEditor) {
                 AlarmEditView()
@@ -60,6 +55,30 @@ struct AlarmListView: View {
                 offsets.map { store.items[$0] }.forEach(store.delete)
             }
         }
+        // 마지막 행이 플로팅 버튼에 가리지 않도록 하단 여백을 둔다.
+        .contentMargins(.bottom, Self.addButtonSize + Self.addButtonBottomInset * 2, for: .scrollContent)
+    }
+
+    private static let addButtonSize: CGFloat = 58
+    private static let addButtonTrailingInset: CGFloat = 32
+    private static let addButtonBottomInset: CGFloat = 24
+
+    /// 우하단에 떠 있는 Liquid Glass 알람 추가 버튼.
+    private var addButton: some View {
+        Button {
+            isPresentingEditor = true
+        } label: {
+            Image(systemName: "plus")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: Self.addButtonSize, height: Self.addButtonSize)
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
+        .accessibilityLabel("알람 추가")
+        .padding(.trailing, Self.addButtonTrailingInset)
+        .padding(.bottom, Self.addButtonBottomInset)
     }
 
     /// 토글을 바꾸면 AlarmKit 등록 · 취소를 함께 처리한다.
@@ -88,6 +107,7 @@ struct AlarmListView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.regular)
         }
+        .placedBelowHeader()
     }
 
     private var deniedView: some View {
@@ -104,7 +124,27 @@ struct AlarmListView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.regular)
         }
+        .placedBelowHeader()
     }
+}
+
+private extension View {
+    /// 헤더(큰 제목) 아래 일정 간격에 위쪽 정렬로 놓는다.
+    func placedBelowHeader() -> some View {
+        VStack(spacing: 0) {
+            fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.top, EmptyStateLayout.topSpacing - EmptyStateLayout.builtInTopInset)
+    }
+}
+
+/// 알람 없음 · 권한 꺼짐 화면 배치 값.
+private enum EmptyStateLayout {
+    /// 헤더 아래 끝에서 아이콘 위 끝까지의 간격.
+    static let topSpacing: CGFloat = 146
+    /// `ContentUnavailableView` 가 아이콘 위에 자체로 두는 여백 (iOS 26 실측 약 19pt).
+    static let builtInTopInset: CGFloat = 19
 }
 
 /// 알람 한 줄. 텍스트 영역을 누르면 편집하고, 오른쪽 토글로 켜고 끈다. 꺼진 알람은 텍스트를 흐리게 보여 준다.
