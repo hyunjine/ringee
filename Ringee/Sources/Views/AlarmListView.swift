@@ -56,11 +56,12 @@ struct AlarmListView: View {
             }
         }
         // 마지막 행이 플로팅 버튼에 가리지 않도록 하단 여백을 둔다.
-        .contentMargins(.bottom, Self.addButtonSize + Self.addButtonInset * 2, for: .scrollContent)
+        .contentMargins(.bottom, Self.addButtonSize + Self.addButtonBottomInset * 2, for: .scrollContent)
     }
 
-    private static let addButtonSize: CGFloat = 48
-    private static let addButtonInset: CGFloat = 24
+    private static let addButtonSize: CGFloat = 68
+    private static let addButtonTrailingInset: CGFloat = 32
+    private static let addButtonBottomInset: CGFloat = 24
 
     /// 우하단에 떠 있는 Liquid Glass 알람 추가 버튼.
     private var addButton: some View {
@@ -68,7 +69,7 @@ struct AlarmListView: View {
             isPresentingEditor = true
         } label: {
             Image(systemName: "plus")
-                .font(.title3.weight(.semibold))
+                .font(.title.weight(.semibold))
                 .foregroundStyle(.primary)
                 .frame(width: Self.addButtonSize, height: Self.addButtonSize)
                 .contentShape(.circle)
@@ -76,8 +77,8 @@ struct AlarmListView: View {
         .buttonStyle(.plain)
         .glassEffect(.regular.interactive(), in: .circle)
         .accessibilityLabel("알람 추가")
-        .padding(.trailing, Self.addButtonInset)
-        .padding(.bottom, Self.addButtonInset)
+        .padding(.trailing, Self.addButtonTrailingInset)
+        .padding(.bottom, Self.addButtonBottomInset)
     }
 
     /// 토글을 바꾸면 AlarmKit 등록 · 취소를 함께 처리한다.
