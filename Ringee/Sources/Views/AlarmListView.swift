@@ -59,7 +59,7 @@ struct AlarmListView: View {
         .contentMargins(.bottom, Self.addButtonSize + Self.addButtonBottomInset * 2, for: .scrollContent)
     }
 
-    private static let addButtonSize: CGFloat = 68
+    private static let addButtonSize: CGFloat = 58
     private static let addButtonTrailingInset: CGFloat = 32
     private static let addButtonBottomInset: CGFloat = 24
 
@@ -69,7 +69,7 @@ struct AlarmListView: View {
             isPresentingEditor = true
         } label: {
             Image(systemName: "plus")
-                .font(.title.weight(.semibold))
+                .font(.title2.weight(.semibold))
                 .foregroundStyle(.primary)
                 .frame(width: Self.addButtonSize, height: Self.addButtonSize)
                 .contentShape(.circle)
