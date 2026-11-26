@@ -10,7 +10,8 @@ let deploymentTargets: DeploymentTargets = .iOS("26.0")
 
 // 버전 (MARKETING_VERSION · CURRENT_PROJECT_VERSION) 은 Configs/Version.xcconfig 에만 둔다.
 // base 에 같은 키를 넣으면 xcconfig 보다 우선하니 넣지 않는다.
-let versionXcconfig: Path = "Configs/Version.xcconfig"
+// Configs/App.xcconfig 가 Version.xcconfig 와 (있으면) 로컬 전용 Secrets.xcconfig 를 함께 불러온다.
+let appXcconfig: Path = "Configs/App.xcconfig"
 
 let baseSettings: SettingsDictionary = [
     "SWIFT_VERSION": "6.0",
@@ -44,6 +45,11 @@ let app = Target.target(
         "NSAlarmKitUsageDescription": "설정한 시간에 알람을 울리기 위해 알람 권한이 필요합니다.",
         // AlarmKit 의 카운트다운 / 스누즈 UI 는 Live Activity 로 표시된다
         "NSSupportsLiveActivities": true,
+        // 공휴일 API(data.go.kr 특일정보) 키. Configs/Secrets.xcconfig 에 없으면 빈 값 → 공휴일 제외 기능 꺼짐
+        "HolidayAPIKey": "$(HOLIDAY_API_KEY)",
+        // 공휴일 제외 알람의 등록 창을 앞으로 미는 백그라운드 새로고침
+        "UIBackgroundModes": ["fetch"],
+        "BGTaskSchedulerPermittedIdentifiers": ["com.hyunjine.ringee.holiday-replan"],
     ]) { $1 }),
     sources: ["Ringee/Sources/**", "Shared/**"],
     resources: ["Ringee/Resources/**"],
@@ -91,8 +97,8 @@ let project = Project(
     settings: .settings(
         base: baseSettings,
         configurations: [
-            .debug(name: .debug, xcconfig: versionXcconfig),
-            .release(name: .release, xcconfig: versionXcconfig),
+            .debug(name: .debug, xcconfig: appXcconfig),
+            .release(name: .release, xcconfig: appXcconfig),
         ]
     ),
     targets: [app, widget, tests]

@@ -1,0 +1,7 @@
+// 프로젝트 공통 빌드 설정. Project.swift 가 이 파일을 쓴다.
+#include "Version.xcconfig"
+
+// 로컬 전용 비밀 값 (gitignore). 없어도 빌드되며, 이때 공휴일 제외 기능은 꺼진 채로 동작한다.
+// 만드는 법: Configs/Secrets.example.xcconfig 를 Secrets.xcconfig 로 복사하고 값을 채운다.
+HOLIDAY_API_KEY =
+#include? "Secrets.xcconfig"
